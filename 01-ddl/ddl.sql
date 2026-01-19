@@ -41,6 +41,8 @@ ALTER TABLE students ADD CONSTRAINT fk_parents_students
   ON DELETE CASCADE
   ON DELETE RESTRICT;
 
+CREATE TABLE ....
+
   -- ALTER TABLE: remove a column from a table
   ALTER TABLE students DROP COLUMN swimming_level;
 

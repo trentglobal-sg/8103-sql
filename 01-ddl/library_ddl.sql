@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS authors_books (
     id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     book_id INT UNSIGNED NOT NULL,
     author_id INT UNSIGNED NOT NULL
-);
+) ENGINE = INNODB;
 
 -- create a fk between authors and the authors_books
 -- hence the constraint name is (by my convention)
@@ -33,3 +33,8 @@ ALTER TABLE authors_books ADD CONSTRAINT fk_authors_authors_books
 
 ALTER TABLE authors_books ADD CONSTRAINT fk_books_authors_books
  FOREIGN KEY(book_id) REFERENCES books(book_id);
+
+CREATE TABLE IF NOT EXISTS editions (
+ edition_id INT UNSIGNED,
+ ISBN VARCHAR(10) UNIQUE
+) ENGINE = INNODB;
