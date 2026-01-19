@@ -1,5 +1,5 @@
 -- DDL = data definition language (aka the language to create the structures)
--- DML = data modelling lanaguge (aka how to do CRUD)
+-- DML = data manipulation lanaguge (aka how to do CRUD)
 -- DQL = data query language (aka how to search in databases)
 -- a comment  in SQL is double dashes
 CREATE DATABASE swimming_coach;
