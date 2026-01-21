@@ -1,7 +1,7 @@
 const express = require("express");
 // mysql2 is a NodeJS client to do CRUD with MySQL/MariaDB
 const mysql2 = require("mysql2/promise");
-// ejs is embedded JavaScript (aka template)
+// ejs is embedded JavaScript (is a way to create templates for a dynamic web app)
 // a template file is a reusable HTML code which express can
 // send back to the client
 const ejs = require("ejs");
@@ -13,6 +13,11 @@ const port = 3000;
 // setup EJS
 app.set('view engine', 'ejs'); // tell Express that we are using EJS as the template engine
 app.set('views', './views'); // tell Express where all the templates are
+
+// enable forms processing on the server side
+app.use(express.urlencoded({
+    extended: true
+}))
 
 // Create a new connection pool
 const dbConfig = {
@@ -42,6 +47,44 @@ app.get('/food-entries', async function(req, res){
         foodEntries: rows
     })
 
+})
+
+app.get("/food-entries/create", function(req,res){
+
+    res.render('create_food_entries');
+})
+
+app.post('/food-entries/create', async function(req,res){
+    const { dateTime, foodName, calories, servingSize, meal, tags, unit} = req.body;
+    const sql = `INSERT INTO food_entries (dateTime, foodName, calories, meal, tags, servingSize, unit)
+       VALUES(?, ?, ?, ?, ?, ?, ?);`
+
+    const values = [dateTime, foodName, calories, meal, JSON.stringify(tags), servingSize, unit ];
+    console.log(values);
+    // dbConnection.execute will run SQL in prepared mode
+    const results = await dbConnection.execute(sql, values);
+    console.log(results);
+
+    res.redirect('/food-entries')
+})
+
+// display the confirmation form
+app.get('/food-entries/delete/:foodRecordID', async function(req,res){
+    const foodRecordID = req.params.foodRecordID;
+    const sql = "SELECT * FROM food_entries WHERE id = ?";
+    const [foodEntries] = await dbConnection.execute(sql, [foodRecordID] );
+    const foodEntry = foodEntries[0];
+    res.render('confirm_delete', {
+        foodEntry
+    })
+})
+
+// process the delete
+app.post('/food-entries/delete/:foodRecordID', async function(req,res){
+    const sql = `DELETE FROM food_entries WHERE id = ?;`
+    const foodID = req.params.foodRecordID;
+    const results = await dbConnection.execute(sql, [foodID]);
+    res.redirect('/food-entries')
 })
 
 app.listen(port, () => {

@@ -97,3 +97,124 @@ ON customers.salesRepEmployeeNumber = employees.employeeNumber
 WHERE country = "USA"
 ORDER BY creditLimit DESC
 LIMIT 10;
+
+-- CURDATE()
+-- returns the current date
+
+-- Date diff and now()
+
+-- create
+CREATE TABLE employee (
+  empId INTEGER PRIMARY KEY AUTO_INCREMENT,
+  name TEXT NOT NULL,
+  dept TEXT NOT NULL,
+  joinedDate DATETIME
+);
+
+DESCRIBE employee;
+
+-- insert
+INSERT INTO EMPLOYEE (name, dept, joinedDate) 
+       VALUES  ('Ava', 'Sales', "2026-01-19" );
+       
+INSERT INTO EMPLOYEE (name, dept, joinedDate) 
+       VALUES  ('John', 'Sales', CURDATE());
+       
+INSERT INTO EMPLOYEE (name, dept, joinedDate) 
+       VALUES  ('Alan', 'Sales', CURDATE() - 5);
+
+SELECT * FROM EMPLOYEE WHERE DATEDIFF(CURDATE(), joinedDate) > 2
+
+
+-- BACK TO THE CLASSICMODELS
+-- Find payments made in the month of October in 2004
+SELECT * FROM payments WHERE paymentDate >= "2004-10-01" AND paymentDate <="2004-10-31";
+
+SELECT * FROM payments WHERE paymentDate BETWEEN "2004-10-01" AND "2004-10-10";
+
+-- Find payments made in the month of October in 2004
+SELECT YEAR(paymentDate), MONTH(paymentDate), DAY(paymentDate), amount FROM payments;
+
+-- Find payments made in the month of October in 2004
+SELECT * FROM payments WHERE YEAR(paymentDate) = 2004 AND MONTH(paymentDate) = 10;
+
+
+-- AGGREGATE FUNCTIONS
+-- those functions summarized a table
+
+-- how many employees are there
+SELECT COUNT(*) FROM employees;
+
+SELECT SUM(amount) FROM payments;
+
+SELECT AVG(amount) FROM payments;
+
+SELECT AVG(creditLimit) FROM customers WHERE creditLimit > 0;
+
+SELECT MAX(creditLimit) FROM customers
+
+-- sub query to find customer with the max credit limit
+SELECT * FROM customers WHERE creditLimit = 
+    (SELECT MAX(creditLimit) FROM customers);
+
+    -- for each country, how many offices there are
+-- The form is: for a <category>, I want to know an <aggreate>
+-- aggregate: sum, min, max, avg, count
+-- Another form: you need a summary for each "something"
+-- you group by something
+-- Whatever you group by you must select
+-- SELECT country, COUNT(*) FROM offices
+-- GROUP BY country;
+
+SELECT DISTINCT country FROM offices;
+
+-- SELECT COUNT(*), <category> FROM <table> GROUP BY <category>
+-- 1) MySQL will do a SELECT DISTINCT <category> FROM <table>
+-- and find out the possible different values <category>
+-- 2) Create one group per category
+-- 3) go through all rows in the table and put each row in their group
+-- 4) apply COUNT(*) to each group
+
+-- For each office, shows how many sales rep there are
+-- WHERE happens before GROUP BY
+SELECT officeCode, COUNT(*) FROM employees
+WHERE jobTitle = "Sales Rep"
+GROUP BY officeCode;
+
+-- For each country, show how many employees there are
+SELECT country, COUNT(*) FROM employees JOIN offices
+ON employees.officeCode = offices.officeCode
+GROUP BY country
+
+-- For each country, show how many sales rep there are
+-- Show the country with the MOST employees first
+SELECT country, COUNT(*) FROM employees JOIN offices
+ON employees.officeCode = offices.officeCode
+WHERE jobTitle = "Sales Rep"
+GROUP BY country
+ORDER BY COUNT(*) DESC
+LIMIT 3;
+
+-- HAVING is like WHERE
+-- WHERE filter rows
+-- HAVING filter groups
+-- For each country, show the avg creditLimit of all the customers there
+-- and only show country where the average credit limit is at least 25K
+SELECT country, AVG(creditLimit) FROM customers
+GROUP BY country
+HAVING AVG(creditLimit) >= 25000
+
+-- show all customers that have made at least 3 payments and the number of times 
+-- they have made payments
+SELECT customerNumber, COUNT(*) FROM payments
+GROUP BY customerNumber
+HAVING COUNT(*) >= 3;
+
+
+-- Show how much revenue is made in each of month of 2004
+
+SELECT SUM(AMOUNT), MONTH(paymentDate), YEAR(paymentDate) FROM payments
+WHERE YEAR(paymentDate) = 2004
+GROUP BY MONTH(paymentDate), YEAR(paymentDate);
+
+

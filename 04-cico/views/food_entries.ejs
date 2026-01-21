@@ -13,6 +13,7 @@
                 <th>Name</th>
                 <th>Calories</th>
                 <th>Meal</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -20,7 +21,10 @@
             <tr>
                 <td><%= foodEntry.foodName %></td>
                 <td><%= foodEntry.calories %></td>
-                <th><%= foodEntry.meal %></th>
+                <td><%= foodEntry.meal %></td>
+                <td>
+                    <a href="/food-entries/delete/<%= foodEntry.id %>" class="btn btn-danger btn-sm">Delete</a>
+                </td>
             </tr>
             <% } %>
         </tbody>
