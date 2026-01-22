@@ -90,6 +90,33 @@ app.get('/food-entries/delete/:foodRecordID', async function(req,res){
     res.render('confirm_delete', {
         foodEntry
     })
+});
+
+app.post('/food-entries/edit/:foodRecordID', async function(req,res){
+    const foodEntryID = req.params.foodRecordID;
+    const sql = `UPDATE food_entries SET dateTime=?,
+                        foodName=?,
+                        calories=?,
+                        meal=?,
+                        tags=?,
+                        servingSize=?,
+                        unit=?
+                     WHERE id =?;`
+    const bindings = [
+        req.body.dateTime, 
+        req.body.foodName, 
+        req.body.calories,
+        req.body.meal,
+        JSON.stringify(req.body.tags),
+        req.body.servingSize,
+        req.body.unit,
+        foodEntryID
+    ];
+    console.log(bindings);
+    
+    const results = await dbConnection.execute(sql, bindings)
+
+    res.redirect('/food-entries')
 })
 
 // process the delete
