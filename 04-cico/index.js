@@ -35,7 +35,6 @@ const dbConfig = {
 // and in times of low traffic
 const dbConnection = mysql2.createPool(dbConfig);
 
-
 app.get('/food-entries', async function(req, res){
     const sql = 'SELECT * FROM food_entries'
     // .query is a way to send SQL commands the database
@@ -49,11 +48,13 @@ app.get('/food-entries', async function(req, res){
 
 })
 
+// display the form
 app.get("/food-entries/create", function(req,res){
 
     res.render('create_food_entries');
 })
 
+// process the form
 app.post('/food-entries/create', async function(req,res){
     const { dateTime, foodName, calories, servingSize, meal, tags, unit} = req.body;
     const sql = `INSERT INTO food_entries (dateTime, foodName, calories, meal, tags, servingSize, unit)
@@ -66,6 +67,18 @@ app.post('/food-entries/create', async function(req,res){
     console.log(results);
 
     res.redirect('/food-entries')
+})
+
+app.get('/food-entries/edit/:foodRecordID', async function(req,res){
+    const foodRecordID = req.params.foodRecordID;
+    const [foodEntries] = await dbConnection.execute(`
+        SELECT * FROM food_entries WHERE id = ?`, 
+    [foodRecordID]);
+    const foodEntry = foodEntries[0];
+    foodEntry.tags = JSON.parse(foodEntry.tags);
+    res.render('edit_food_entries',{
+        foodEntry
+    })
 })
 
 // display the confirmation form

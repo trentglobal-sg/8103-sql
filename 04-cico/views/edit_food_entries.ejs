@@ -8,12 +8,12 @@
 </head>
 
 <body>
-
+    <h1>Editing <%= foodEntry.foodName %></h1>
     <form method="POST">
-        <%- include('food_entry_form', {
-            foodEntry: {}
+        <%- include("food_entry_form", {
+            foodEntry
         }) %>
-        <input type="submit" value="Create Food Entry" />
+        <input type="submit" value="Edit Food Entry" />
     </form>
 </body>
 

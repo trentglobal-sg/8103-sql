@@ -23,6 +23,7 @@
                 <td><%= foodEntry.calories %></td>
                 <td><%= foodEntry.meal %></td>
                 <td>
+                    <a href="/food-entries/edit/<%= foodEntry.id %>" class="btn btn-primary btn-sm">Edit</a>
                     <a href="/food-entries/delete/<%= foodEntry.id %>" class="btn btn-danger btn-sm">Delete</a>
                 </td>
             </tr>
