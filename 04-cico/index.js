@@ -13,6 +13,7 @@ const port = 3000;
 // setup EJS
 app.set('view engine', 'ejs'); // tell Express that we are using EJS as the template engine
 app.set('views', './views'); // tell Express where all the templates are
+app.use(express.static('public'))
 
 // enable forms processing on the server side
 app.use(express.urlencoded({
@@ -35,6 +36,10 @@ const dbConfig = {
 // and in times of low traffic
 const dbConnection = mysql2.createPool(dbConfig);
 
+app.get('/', function(req,res){
+    res.render('home')
+})
+
 app.get('/food-entries', async function(req, res){
     const sql = 'SELECT * FROM food_entries'
     // .query is a way to send SQL commands the database
@@ -49,22 +54,23 @@ app.get('/food-entries', async function(req, res){
 })
 
 // display the form
-app.get("/food-entries/create", function(req,res){
-
-    res.render('create_food_entries');
+app.get("/food-entries/create", async function(req,res){
+    const [meals] = await dbConnection.execute("SELECT * FROM meals");
+    res.render('create_food_entries',{
+        meals
+    });
 })
 
 // process the form
 app.post('/food-entries/create', async function(req,res){
     const { dateTime, foodName, calories, servingSize, meal, tags, unit} = req.body;
-    const sql = `INSERT INTO food_entries (dateTime, foodName, calories, meal, tags, servingSize, unit)
+    const sql = `INSERT INTO food_entries (dateTime, foodName, calories, meal_id, tags, servingSize, unit)
        VALUES(?, ?, ?, ?, ?, ?, ?);`
 
     const values = [dateTime, foodName, calories, meal, JSON.stringify(tags), servingSize, unit ];
     console.log(values);
     // dbConnection.execute will run SQL in prepared mode
     const results = await dbConnection.execute(sql, values);
-    console.log(results);
 
     res.redirect('/food-entries')
 })

@@ -11,8 +11,10 @@
 
     <form method="POST">
         <%- include('food_entry_form', {
-            foodEntry: {}
-        }) %>
+            foodEntry: {},
+            meals: meals
+        }) 
+        %>
         <input type="submit" value="Create Food Entry" />
     </form>
 </body>
