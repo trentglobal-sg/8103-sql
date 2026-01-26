@@ -1,0 +1,6 @@
+USE cico_tracker;
+
+CREATE TABLE meals (
+    id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100)
+) ENGINE = INNODB;

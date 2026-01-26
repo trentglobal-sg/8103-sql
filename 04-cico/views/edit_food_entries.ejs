@@ -11,7 +11,7 @@
     <h1>Editing <%= foodEntry.foodName %></h1>
     <form method="POST">
         <%- include("food_entry_form", {
-            foodEntry
+            foodEntry, relatedTags, tags
         }) %>
         <input type="submit" value="Edit Food Entry" />
     </form>

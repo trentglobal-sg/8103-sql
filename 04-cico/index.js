@@ -35,13 +35,13 @@ const dbConfig = {
 // and in times of low traffic
 const dbConnection = mysql2.createPool(dbConfig);
 
-app.get('/food-entries', async function(req, res){
+app.get('/food-entries', async function (req, res) {
     const sql = 'SELECT * FROM food_entries'
     // .query is a way to send SQL commands the database
     // the return will be array of information
     const results = await dbConnection.query(sql);
     const rows = results[0];
-   
+
     res.render('food_entries', {
         foodEntries: rows
     })
@@ -49,78 +49,146 @@ app.get('/food-entries', async function(req, res){
 })
 
 // display the form
-app.get("/food-entries/create", function(req,res){
-
-    res.render('create_food_entries');
+app.get("/food-entries/create", async function (req, res) {
+    const [meals] = await dbConnection.query("SELECT * FROM meals");
+    const [tags] = await dbConnection.query("SELECT * FROM tags");
+    res.render('create_food_entries', {
+        meals,
+        tags,
+        relatedTags: []
+    });
 })
 
 // process the form
-app.post('/food-entries/create', async function(req,res){
-    const { dateTime, foodName, calories, servingSize, meal, tags, unit} = req.body;
-    const sql = `INSERT INTO food_entries (dateTime, foodName, calories, meal, tags, servingSize, unit)
-       VALUES(?, ?, ?, ?, ?, ?, ?);`
+app.post('/food-entries/create', async function (req, res, next) {
 
-    const values = [dateTime, foodName, calories, meal, JSON.stringify(tags), servingSize, unit ];
-    console.log(values);
-    // dbConnection.execute will run SQL in prepared mode
-    const results = await dbConnection.execute(sql, values);
-    console.log(results);
+    // manually getting a connection from the pool
+    const connection = await dbConnection.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { dateTime, foodName, calories, servingSize, meal, tags, unit } = req.body;
+        const sql = `INSERT INTO food_entries (dateTime, foodName, calories, meal_id, servingSize, unit)
+       VALUES(?, ?, ?, ?, ?, ?);`
+
+        const values = [dateTime, foodName, calories, meal, servingSize, unit];
+
+        // dbConnection.execute will run SQL in prepared mode
+        const [results] = await dbConnection.execute(sql, values);
+        const newFoodEntryID = results.insertId;
+
+        if (tags && Array.isArray(tags)) {
+            for (let t of tags) {
+                const sql = `INSERT INTO food_entries_tags (food_entry_id, tag_id) VALUES (?,?)`;
+                await connection.execute(sql, [newFoodEntryID, t]);
+            }
+        }
+
+        // if all updates successful, make it permanent
+        await connection.commit();
+        res.redirect('/food-entries')
+
+    } catch (e) {
+        console.error(e);
+        next(e); // pass the error to Express for processing
+        await connection.rollback();
+    } finally {
+        // when the code in the try finishes successful or with error,
+        // finally will be called
+        await connection.release();
+    }
+
+})
+
+app.get('/food-entries/edit/:foodRecordID', async function (req, res) {
+    const foodRecordID = req.params.foodRecordID;
+    const [foodEntries] = await dbConnection.execute(`
+        SELECT * FROM food_entries WHERE id = ?`,
+        [foodRecordID]);
+    const foodEntry = foodEntries[0];
+
+    const [foodEntryTags] = await dbConnection.execute(`SELECT * FROM food_entries_tags WHERE food_entry_id = ?`, [foodRecordID]);
+    console.log(foodEntryTags)
+    const [tags] = await dbConnection.query("SELECT * FROM tags");
+    const relatedTags = foodEntryTags.map(t => t.tag_id);
+
+    const [meals] = await dbConnection.query("SELECT * FROM meals");
+
+    res.render('edit_food_entries', {
+        foodEntry,
+        meals,
+        relatedTags,
+        tags
+    })
+})
+
+app.post('/food-entries/edit/:foodRecordID', async function (req, res, next) {
+
+    const connection = await dbConnection.getConnection();
+    try {
+        await connection.beginTransaction();
+        const foodEntryID = req.params.foodRecordID;
+        const sql = `UPDATE food_entries SET dateTime=?,
+                        foodName=?,
+                        calories=?,
+                        meal_id=?,
+                        servingSize=?,
+                        unit=?
+                     WHERE id =?;`
+        const bindings = [
+            req.body.dateTime,
+            req.body.foodName,
+            req.body.calories,
+            req.body.meal,
+            req.body.servingSize,
+            req.body.unit,
+            foodEntryID
+        ];
+       
+        // update many to many relationships
+        // 1. delete all the existing relationships
+        await connection.execute("DELETE FROM food_entries_tags WHERE food_entry_id = ?", [foodEntryID]);
+
+        // 2. re-add them to according to the form
+        if (req.body.tags && Array.isArray(req.body.tags)) {
+            for (let t of req.body.tags) {
+                const sql = `INSERT INTO food_entries_tags (food_entry_id, tag_id) VALUES (?,?)`;
+                await connection.execute(sql, [foodEntryID, t]);
+            }
+        }
+
+        const results = await connection.execute(sql, bindings)
+
+        await connection.commit();
+
+    } catch (e) {
+        await connection.rollback();
+        next(e); // pass the error to express for error handling
+        console.error(e);
+    } finally {
+        await connection.release();
+    }
+
+
+
 
     res.redirect('/food-entries')
 })
 
-app.get('/food-entries/edit/:foodRecordID', async function(req,res){
-    const foodRecordID = req.params.foodRecordID;
-    const [foodEntries] = await dbConnection.execute(`
-        SELECT * FROM food_entries WHERE id = ?`, 
-    [foodRecordID]);
-    const foodEntry = foodEntries[0];
-    foodEntry.tags = JSON.parse(foodEntry.tags);
-    res.render('edit_food_entries',{
-        foodEntry
-    })
-})
-
 // display the confirmation form
-app.get('/food-entries/delete/:foodRecordID', async function(req,res){
+app.get('/food-entries/delete/:foodRecordID', async function (req, res) {
     const foodRecordID = req.params.foodRecordID;
     const sql = "SELECT * FROM food_entries WHERE id = ?";
-    const [foodEntries] = await dbConnection.execute(sql, [foodRecordID] );
+    const [foodEntries] = await dbConnection.execute(sql, [foodRecordID]);
     const foodEntry = foodEntries[0];
     res.render('confirm_delete', {
         foodEntry
     })
 });
 
-app.post('/food-entries/edit/:foodRecordID', async function(req,res){
-    const foodEntryID = req.params.foodRecordID;
-    const sql = `UPDATE food_entries SET dateTime=?,
-                        foodName=?,
-                        calories=?,
-                        meal=?,
-                        tags=?,
-                        servingSize=?,
-                        unit=?
-                     WHERE id =?;`
-    const bindings = [
-        req.body.dateTime, 
-        req.body.foodName, 
-        req.body.calories,
-        req.body.meal,
-        JSON.stringify(req.body.tags),
-        req.body.servingSize,
-        req.body.unit,
-        foodEntryID
-    ];
-    console.log(bindings);
-    
-    const results = await dbConnection.execute(sql, bindings)
-
-    res.redirect('/food-entries')
-})
 
 // process the delete
-app.post('/food-entries/delete/:foodRecordID', async function(req,res){
+app.post('/food-entries/delete/:foodRecordID', async function (req, res) {
     const sql = `DELETE FROM food_entries WHERE id = ?;`
     const foodID = req.params.foodRecordID;
     const results = await dbConnection.execute(sql, [foodID]);
